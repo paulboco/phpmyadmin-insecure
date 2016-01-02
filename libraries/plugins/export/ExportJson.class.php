@@ -67,7 +67,9 @@ class ExportJson extends ExportPlugin
         if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
             $leaf = new BoolPropertyItem();
             $leaf->setName('pretty_print');
-            $leaf->setText(__('Output pretty-printed JSON (Use human-readable formatting)'));
+            $leaf->setText(
+                __('Output pretty-printed JSON (Use human-readable formatting)')
+            );
             $generalOptions->addProperty($leaf);
         }
 
@@ -84,7 +86,7 @@ class ExportJson extends ExportPlugin
      *
      * @return bool Whether it succeeded
      */
-    public function exportHeader ()
+    public function exportHeader()
     {
         PMA_exportOutputHandler(
             '/**' . $GLOBALS['crlf']
@@ -100,7 +102,7 @@ class ExportJson extends ExportPlugin
      *
      * @return bool Whether it succeeded
      */
-    public function exportFooter ()
+    public function exportFooter()
     {
         return true;
     }
@@ -113,7 +115,7 @@ class ExportJson extends ExportPlugin
      *
      * @return bool Whether it succeeded
      */
-    public function exportDBHeader ($db, $db_alias = '')
+    public function exportDBHeader($db, $db_alias = '')
     {
         if (empty($db_alias)) {
             $db_alias = $db;
@@ -131,7 +133,7 @@ class ExportJson extends ExportPlugin
      *
      * @return bool Whether it succeeded
      */
-    public function exportDBFooter ($db)
+    public function exportDBFooter($db)
     {
         return true;
     }
@@ -139,12 +141,13 @@ class ExportJson extends ExportPlugin
     /**
      * Outputs CREATE DATABASE statement
      *
-     * @param string $db       Database name
-     * @param string $db_alias Aliases of db
+     * @param string $db          Database name
+     * @param string $export_type 'server', 'database', 'table'
+     * @param string $db_alias    Aliases of db
      *
      * @return bool Whether it succeeded
      */
-    public function exportDBCreate($db, $db_alias = '')
+    public function exportDBCreate($db, $export_type, $db_alias = '')
     {
         return true;
     }
@@ -182,7 +185,6 @@ class ExportJson extends ExportPlugin
             $columns[$i] = stripslashes($col_as);
         }
 
-        $buffer = '';
         $record_cnt = 0;
         while ($record = $GLOBALS['dbi']->fetchRow($result)) {
 
@@ -207,7 +209,9 @@ class ExportJson extends ExportPlugin
                 $data[$columns[$i]] = $record[$i];
             }
 
-            if (isset($GLOBALS['json_pretty_print']) && $GLOBALS['json_pretty_print']) {
+            if (isset($GLOBALS['json_pretty_print'])
+                && $GLOBALS['json_pretty_print']
+            ) {
                 $encoded = json_encode($data, JSON_PRETTY_PRINT);
             } else {
                 $encoded = json_encode($data);
@@ -228,4 +232,3 @@ class ExportJson extends ExportPlugin
         return true;
     }
 }
-?>

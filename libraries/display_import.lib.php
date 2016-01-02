@@ -210,16 +210,18 @@ function PMA_getHtmlForImportCharset()
 /**
  * Prints Html For Display Import options : file property
  *
- * @param int   $max_upload_size Max upload size
- * @param Array $import_list     import list
+ * @param int            $max_upload_size   Max upload size
+ * @param ImportPlugin[] $import_list       import list
+ * @param String         $local_import_file from upload directory
  *
  * @return string
  */
-function PMA_getHtmlForImportOptionsFile($max_upload_size, $import_list)
-{
+function PMA_getHtmlForImportOptionsFile(
+    $max_upload_size, $import_list, $local_import_file
+) {
     global $cfg;
     $html  = '    <div class="importoptions">';
-    $html .= '         <h3>'  . __('File to Import:') . '</h3>';
+    $html .= '         <h3>'  . __('File to import:') . '</h3>';
     $html .= PMA_getHtmlForImportCompressions();
     $html .= '        <div class="formelementrow" id="upload_form">';
 
@@ -235,7 +237,7 @@ function PMA_getHtmlForImportOptionsFile($max_upload_size, $import_list)
         $html .= '               <input type="radio" name="file_location" '
             . 'id="radio_local_import_file"';
         if (! empty($GLOBALS['timeout_passed'])
-           && ! empty($GLOBALS['local_import_file'])
+            && ! empty($local_import_file)
         ) {
             $html .= ' checked="checked"';
         }
@@ -273,7 +275,7 @@ function PMA_getHtmlForImportOptionsFile($max_upload_size, $import_list)
 function PMA_getHtmlForImportOptionsPartialImport($timeout_passed, $offset)
 {
     $html  = '    <div class="importoptions">';
-    $html .= '        <h3>' . __('Partial Import:') . '</h3>';
+    $html .= '        <h3>' . __('Partial import:') . '</h3>';
 
     if (isset($timeout_passed) && $timeout_passed) {
         $html .= '<div class="formelementrow">' . "\n";
@@ -304,8 +306,7 @@ function PMA_getHtmlForImportOptionsPartialImport($timeout_passed, $offset)
         $html .= '        <div class="formelementrow">';
         $html .= '            <label for="text_skip_queries">'
             .  __(
-                'Skip this number of queries (for SQL) or lines (for other '
-                . 'formats), starting from the first one:'
+                'Skip this number of queries (for SQL) starting from the first one:'
             )
             . '</label>';
         $html .= '            <input type="number" name="skip_queries" value="'
@@ -335,14 +336,9 @@ function PMA_getHtmlForImportOptionsPartialImport($timeout_passed, $offset)
 function PMA_getHtmlForImportOptionsOther()
 {
     $html  = '   <div class="importoptions">';
-    $html .= '       <h3>' . __('Other Options:') . '</h3>';
+    $html .= '       <h3>' . __('Other options:') . '</h3>';
     $html .= '       <div class="formelementrow">';
-    $html .= '           <input type="checkbox" name="disable_foreign_keys"';
-    $html .= '               value="yes" id="checkbox_disable_foreign_keys" ';
-    $html .= PMA_pluginCheckboxCheck('Import', 'disable_foreign_keys') . '/>';
-    $html .= '           <label for="checkbox_disable_foreign_keys">';
-    $html .= __('Disable foreign key check');
-    $html .= '           </label>';
+    $html .= PMA_Util::getFKCheckbox();
     $html .= '       </div>';
     $html .= '   </div>';
 
@@ -352,7 +348,7 @@ function PMA_getHtmlForImportOptionsOther()
 /**
  * Prints Html For Display Import options : Format
  *
- * @param Array $import_list import list
+ * @param ImportPlugin[] $import_list import list
  *
  * @return string
  */
@@ -365,7 +361,7 @@ function PMA_getHtmlForImportOptionsFormat($import_list)
     $html .= '   </div>';
 
     $html .= '    <div class="importoptions" id="format_specific_opts">';
-    $html .= '        <h3>' . __('Format-Specific Options:') . '</h3>';
+    $html .= '        <h3>' . __('Format-specific options:') . '</h3>';
     $html .= '        <p class="no_js_msg" id="scroll_to_options_msg">'
         . 'Scroll down to fill in the options for the selected format '
         . 'and ignore the options for other formats.</p>';
@@ -403,20 +399,21 @@ function PMA_getHtmlForImportOptionsSubmit()
 /**
  * Prints Html For Display Import
  *
- * @param int    $upload_id       The selected upload id
- * @param String $import_type     Import type: server, database, table
- * @param String $db              Selected DB
- * @param String $table           Selected Table
- * @param int    $max_upload_size Max upload size
- * @param Array  $import_list     Import list
- * @param String $timeout_passed  Timeout passed
- * @param String $offset          Timeout offset
+ * @param int            $upload_id         The selected upload id
+ * @param String         $import_type       Import type: server, database, table
+ * @param String         $db                Selected DB
+ * @param String         $table             Selected Table
+ * @param int            $max_upload_size   Max upload size
+ * @param ImportPlugin[] $import_list       Import list
+ * @param String         $timeout_passed    Timeout passed
+ * @param String         $offset            Timeout offset
+ * @param String         $local_import_file from upload directory
  *
  * @return string
  */
 function PMA_getHtmlForImport(
     $upload_id, $import_type, $db, $table,
-    $max_upload_size, $import_list, $timeout_passed, $offset
+    $max_upload_size, $import_list, $timeout_passed, $offset, $local_import_file
 ) {
     global $SESSION_KEY;
     $html  = '';
@@ -445,7 +442,9 @@ function PMA_getHtmlForImport(
 
     $html .= PMA_getHtmlForImportOptions($import_type, $db, $table);
 
-    $html .= PMA_getHtmlForImportOptionsFile($max_upload_size, $import_list);
+    $html .= PMA_getHtmlForImportOptionsFile(
+        $max_upload_size, $import_list, $local_import_file
+    );
 
     $html .= PMA_getHtmlForImportOptionsPartialImport($timeout_passed, $offset);
 
@@ -623,4 +622,65 @@ function PMA_getHtmlForImportWithPlugin($upload_id)
     return $html;
 }
 
-?>
+/**
+ * Gets HTML to display import dialogs
+ *
+ * @param String $import_type     Import type: server|database|table
+ * @param String $db              Selected DB
+ * @param String $table           Selected Table
+ * @param int    $max_upload_size Max upload size
+ *
+ * @return string $html
+ */
+function PMA_getImportDisplay($import_type, $db, $table, $max_upload_size)
+{
+    global $SESSION_KEY;
+    include_once './libraries/file_listing.lib.php';
+    include_once './libraries/plugin_interface.lib.php';
+    // this one generates also some globals
+    include_once './libraries/display_import_ajax.lib.php';
+
+    /* Scan for plugins */
+    /* @var $import_list ImportPlugin[] */
+    $import_list = PMA_getPlugins(
+        "import",
+        'libraries/plugins/import/',
+        $import_type
+    );
+
+    /* Fail if we didn't find any plugin */
+    if (empty($import_list)) {
+        PMA_Message::error(
+            __(
+                'Could not load import plugins, please check your installation!'
+            )
+        )->display();
+        exit;
+    }
+
+    if (PMA_isValid($_REQUEST['offset'], 'numeric')) {
+        $offset = $_REQUEST['offset'];
+    }
+    if (isset($_REQUEST['timeout_passed'])) {
+        $timeout_passed = $_REQUEST['timeout_passed'];
+    }
+
+    $local_import_file = '';
+    if (isset($_REQUEST['local_import_file'])) {
+        $local_import_file = $_REQUEST['local_import_file'];
+    }
+
+    $timeout_passed_str = isset($timeout_passed)? $timeout_passed : null;
+    $offset_str = isset($offset)? $offset : null;
+    return PMA_getHtmlForImport(
+        $upload_id,
+        $import_type,
+        $db,
+        $table,
+        $max_upload_size,
+        $import_list,
+        $timeout_passed_str,
+        $offset_str,
+        $local_import_file
+    );
+}

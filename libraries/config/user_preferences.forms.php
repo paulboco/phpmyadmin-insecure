@@ -26,16 +26,17 @@ $forms['Features']['General'] = array(
     'NaturalOrder',
     'InitialSlidersState',
     'LoginCookieValidity',
-    'Servers/1/only_db', // saves to Server/only_db
-    'Servers/1/hide_db', // saves to Server/hide_db
     'SkipLockedTables',
     'DisableMultiTableMaintenance',
-    'MaxDbList',
     'MaxTableList',
-    'NumFavoriteTables',
     'ShowHint',
     'SendErrorReports',
     'ConsoleEnterExecutes'
+);
+$forms['Features']['Databases'] = array(
+    'Servers/1/only_db', // saves to Server/only_db
+    'Servers/1/hide_db', // saves to Server/hide_db
+    'MaxDbList'
 );
 $forms['Features']['Text_fields'] = array(
     'CharEditing',
@@ -69,7 +70,9 @@ $forms['Sql_queries']['Sql_queries'] = array(
     'MaxCharactersInDisplayedSQL',
     'RetainQueryBox',
     'CodemirrorEnable',
-    'EnableAutocompleteForTablesAndColumns');
+    'LintEnable',
+    'EnableAutocompleteForTablesAndColumns',
+    'DefaultForeignKeyChecks');
 $forms['Sql_queries']['Sql_box'] = array(
     'SQLQuery/Edit',
     'SQLQuery/Explain',
@@ -83,12 +86,19 @@ $forms['Navi_panel']['Navi_panel'] = array(
     'NavigationLogoLinkWindow',
     'NavigationTreePointerEnable',
     'FirstLevelNavigationItems',
-    'MaxNavigationItems',
-    'NavigationTreeEnableGrouping',
-    'NavigationTreeEnableExpansion',
     'NavigationTreeDisplayItemFilterMinimum',
     'NumRecentTables',
     'NumFavoriteTables'
+);
+$forms['Navi_panel']['Navi_tree'] = array(
+    'MaxNavigationItems',
+    'NavigationTreeEnableGrouping',
+    'NavigationTreeEnableExpansion',
+    'NavigationTreeShowTables',
+    'NavigationTreeShowViews',
+    'NavigationTreeShowFunctions',
+    'NavigationTreeShowProcedures',
+    'NavigationTreeShowEvents'
 );
 $forms['Navi_panel']['Navi_databases'] = array(
     'NavigationTreeDisplayDbFilterMinimum',
@@ -104,6 +114,7 @@ $forms['Main_panel']['Startup'] = array(
     'ShowStats',
     'ShowServerInfo');
 $forms['Main_panel']['DbStructure'] = array(
+    'ShowDbStructureComment',
     'ShowDbStructureCreation',
     'ShowDbStructureLastUpdate',
     'ShowDbStructureLastCheck');
@@ -122,6 +133,7 @@ $forms['Main_panel']['Browse'] = array(
     'RepeatCells',
     'LimitChars',
     'RowActionLinks',
+    'RowActionLinksWithoutUnique',
     'TablePrimaryKeyOrder',
     'RememberSorting',
     'RelationalDisplay');
@@ -144,8 +156,7 @@ $forms['Import']['Import_defaults'] = array(
     'Import/format',
     'Import/charset',
     'Import/allow_interrupt',
-    'Import/skip_queries',
-    'Import/disable_foreign_keys'
+    'Import/skip_queries'
 );
 $forms['Import']['Sql'] = array(
     'Import/sql_compatibility',
@@ -184,6 +195,7 @@ $forms['Export']['Export_defaults'] = array(
         'Export/compression',
         'Export/charset',
         'Export/lock_tables',
+        'Export/as_separate_files',
         'Export/asfile' => ':group',
             'Export/onserver',
             'Export/onserver_overwrite',
@@ -202,20 +214,18 @@ $forms['Export']['Sql'] = array(
     'Export/sql_views_as_tables',
     'Export/sql_metadata',
     'Export/sql_compatibility',
-    ':group:' . __('Database export options'),
-        'Export/sql_drop_database',
-        'Export/sql_structure_or_data',
-        ':group:end',
+    'Export/sql_structure_or_data',
     ':group:' . __('Structure'),
+        'Export/sql_drop_database',
+        'Export/sql_create_database',
         'Export/sql_drop_table',
-        'Export/sql_create_table',
-        'Export/sql_create_view',
-        'Export/sql_procedure_function',
-        'Export/sql_create_trigger',
-        'Export/sql_create_table_statements' => ':group',
+        'Export/sql_create_table' => ':group',
             'Export/sql_if_not_exists',
             'Export/sql_auto_increment',
             ':group:end',
+        'Export/sql_create_view',
+        'Export/sql_procedure_function',
+        'Export/sql_create_trigger',
         'Export/sql_backquotes',
         ':group:end',
     ':group:' . __('Data'),
@@ -285,4 +295,3 @@ $forms['Export']['Texy'] = array(
     ':group:' . __('Data'),
         'Export/texytext_null',
         'Export/texytext_columns');
-?>

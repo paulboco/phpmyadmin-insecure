@@ -61,6 +61,16 @@ default:
 }
 
 if (!empty($submit_mult)) {
+
+    if (isset($_REQUEST['goto'])
+        && (! isset($_REQUEST['rows_to_delete'])
+        || ! is_array($_REQUEST['rows_to_delete']))
+    ) {
+        $response = PMA_Response::getInstance();
+        $response->isSuccess(false);
+        $response->addJSON('message', __('No row selected.'));
+    }
+
     switch($submit_mult) {
     case 'row_copy':
         $_REQUEST['default_action'] = 'insert';
@@ -145,9 +155,24 @@ if (!empty($submit_mult)) {
         include_once 'libraries/parse_analyze.inc.php';
 
         PMA_executeQueryAndSendQueryResponse(
-            $analyzed_sql_results, false, $db, $table, null, null, null, false, null,
-            null, null, $goto, $pmaThemeImage, null, null, null, $sql_query,
-            null, null
+            $analyzed_sql_results, // analyzed_sql_results
+            false, // is_gotofile
+            $db, // db
+            $table, // table
+            null, // find_real_end
+            null, // sql_query_for_bookmark
+            null, // extra_data
+            null, // message_to_show
+            null, // message
+            null, // sql_data
+            $goto, // goto
+            $pmaThemeImage, // pmaThemeImage
+            null, // disp_query
+            null, // disp_message
+            null, // query_type
+            $sql_query, // sql_query
+            null, // selectedTables
+            null // complete_query
         );
     }
 }

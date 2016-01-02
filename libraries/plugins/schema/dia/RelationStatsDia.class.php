@@ -48,7 +48,7 @@ class Relation_Stats_Dia
      *
      * @see Relation_Stats_Dia::_getXy
      */
-    function __construct(
+    public function __construct(
         $diagram, $master_table, $master_field, $foreign_table, $foreign_field
     ) {
         $this->diagram = $diagram;
@@ -115,8 +115,8 @@ class Relation_Stats_Dia
         * points are same then return it false and don't draw that
         * relation
         */
-        if ( $this->srcConnPointsRight == $this->destConnPointsRight) {
-            if ( $this->srcConnPointsLeft == $this->destConnPointsLeft) {
+        if ($this->srcConnPointsRight == $this->destConnPointsRight) {
+            if ($this->srcConnPointsLeft == $this->destConnPointsLeft) {
                 return false;
             }
         }
@@ -212,4 +212,3 @@ class Relation_Stats_Dia
         );
     }
 }
-?>

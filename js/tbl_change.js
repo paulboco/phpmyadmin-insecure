@@ -162,12 +162,14 @@ function verificationsAfterFieldChange(urlField, multi_edit, theType)
 {
     var evt = window.event || arguments.callee.caller.arguments[0];
     var target = evt.target || evt.srcElement;
-    var $this_input = $("input[name='fields[multi_edit][" + multi_edit + "][" +
+    var $this_input = $(":input[name^='fields[multi_edit][" + multi_edit + "][" +
         urlField + "]']");
-    // check if it is textarea rather than input
-    if ($this_input.length === 0) {
-        $this_input = $("textarea[name='fields[multi_edit][" + multi_edit + "][" +
-            urlField + "]']");
+    // the function drop-down that corresponds to this input field
+    var $this_function = $("select[name='funcs[multi_edit][" + multi_edit + "][" +
+        urlField + "]']");
+    var function_selected = false;
+    if (typeof $this_function.val() !== 'undefined' && $this_function.val().length > 0) {
+        function_selected = true;
     }
 
     //To generate the textbox that can take the salt
@@ -202,10 +204,6 @@ function verificationsAfterFieldChange(urlField, multi_edit, theType)
         });
     }
 
-    var removeOnclick = 1;
-    if ($("input[name='fields_null[multi_edit][" + multi_edit + "][" + urlField + "]']").length) {
-        removeOnclick = 0;
-    }
     // Unchecks the corresponding "NULL" control
     $("input[name='fields_null[multi_edit][" + multi_edit + "][" + urlField + "]']").prop('checked', false);
 
@@ -219,7 +217,16 @@ function verificationsAfterFieldChange(urlField, multi_edit, theType)
     else if (theType.substring(0,7) === "varchar") {
         charExceptionHandling = theType.substring(8,9);
     }
-    if (target.name.substring(0, 6) === "fields") {
+    if (function_selected) {
+        $this_input.removeAttr('min');
+        $this_input.removeAttr('max');
+        // @todo: put back attributes if corresponding function is deselected
+    }
+
+    if ($this_input.data('rulesadded') == null && ! function_selected) {
+
+        //call validate before adding rules
+        $($this_input[0].form).validate();
         // validate for date time
         if (theType == "datetime" || theType == "time" || theType == "date" || theType == "timestamp") {
             $this_input.rules("add", {
@@ -245,15 +252,21 @@ function verificationsAfterFieldChange(urlField, multi_edit, theType)
                 min: {
                     param: mini,
                     depends: function() {
-                        if (isNaN($this_input.val())) return false;
-                        else return checkForCheckbox(multi_edit);
+                        if (isNaN($this_input.val())) {
+                            return false;
+                        } else {
+                            return checkForCheckbox(multi_edit);
+                        }
                     }
                 },
                 max: {
                     param: maxi,
                     depends: function() {
-                        if (isNaN($this_input.val())) return false;
-                        else return checkForCheckbox(multi_edit);
+                        if (isNaN($this_input.val())) {
+                            return false;
+                        } else {
+                            return checkForCheckbox(multi_edit);
+                        }
                     }
                 }
             });
@@ -284,64 +297,20 @@ function verificationsAfterFieldChange(urlField, multi_edit, theType)
                 }
             });
         }
-        if (removeOnclick === 1) $this_input.removeAttr('onchange');
+        $this_input.data('rulesadded', true);
+    } else if ($this_input.data('rulesadded') == true && function_selected) {
+        // remove any rules added
+        $this_input.rules("remove");
+        // remove any error messages
+        $this_input
+            .removeClass('error')
+            .removeAttr('aria-invalid')
+            .siblings('.error')
+            .remove();
+        $this_input.data('rulesadded', null);
     }
 }
 /* End of fields validation*/
-
-/**
- * Applies the selected function to all rows to be inserted.
- *
- * @param  string currId       Current ID of the row
- * @param  string functionName Name of the function
- * @param  bool   copySalt     Whether to copy salt or not
- * @param  string salt         Salt value
- * @param  object targetRows   Target rows
- *
- * @return void
- */
-function applyFunctionToAllRows(currId, functionName, copySalt, salt, targetRows)
-{
-    targetRows.each(function () {
-        var currentRowNum = /\d/.exec($(this).find("input[name*='fields_name']").attr("name"));
-
-        // Append the function select list.
-        var targetSelectList = $(this).find("select[name*='funcs[multi_edit]']");
-
-        if (targetSelectList.attr("id") === currId) {
-            return;
-        }
-        targetSelectList.find("option").filter(function () {
-            return $(this).text() === functionName;
-        }).attr("selected","selected");
-
-        // Handle salt field.
-        if (functionName === 'AES_ENCRYPT' ||
-                functionName === 'AES_DECRYPT' ||
-                functionName === 'DES_ENCRYPT' ||
-                functionName === 'DES_DECRYPT' ||
-                functionName === 'ENCRYPT') {
-            if ($("#salt_" + targetSelectList.attr("id")).length === 0) {
-                // Get hash value.
-                var hashed_value = targetSelectList.attr("name").match(/\[multi\_edit\]\[\d\]\[(.*)\]/);
-                //To generate the textbox that can take the salt
-                var new_salt_box = "<br><input type=text name=salt[multi_edit][" + currentRowNum + "][" + hashed_value[1] + "]" +
-                    " id=salt_" + targetSelectList.attr("id") + " placeholder='" + PMA_messages.strEncryptionKey + "'>";
-                targetSelectList.parent().next("td").next("td").find("input[name*='fields']").after(new_salt_box);
-            }
-
-            if (copySalt) {
-                $("#salt_" + targetSelectList.attr("id")).val(salt);
-            }
-        } else {
-            var id = targetSelectList.attr("id");
-            if ($("#salt_" + id).length) {
-                $("#salt_" + id).remove();
-            }
-        }
-    });
-}
-
 
 /**
  * Unbind all event handlers before tearing down a page
@@ -353,7 +322,6 @@ AJAX.registerTeardown('tbl_change.js', function () {
     $(document).off('click', 'input.checkbox_null');
     $('select[name="submit_type"]').unbind('change');
     $(document).off('change', "#insert_rows");
-    $(document).off('click', "select[name*='funcs']");
 });
 
 /**
@@ -369,37 +337,28 @@ AJAX.registerOnload('tbl_change.js', function () {
         // validate the comment form when it is submitted
         $("#insertForm").validate();
         jQuery.validator.addMethod("validationFunctionForHex", function(value, element) {
-            if (value.match(/^[a-f0-9]*$/i) === null) {
-                return false;
-            }
-            else return true;
+            return value.match(/^[a-f0-9]*$/i) !== null;
         });
 
         jQuery.validator.addMethod("validationFunctionForFuns", function(value, element, options) {
             if (value.substring(0, 3) === "AES" && options.data('type') !== 'HEX') {
                 return false;
             }
-            else if (value.substring(0, 3) === "MD5"
-                    && typeof options.data('maxlength') !== 'undefined'
-                    && options.data('maxlength') < 32) {
-                return false;
-            }
-            else return true;
+
+            return !(value.substring(0, 3) === "MD5"
+            && typeof options.data('maxlength') !== 'undefined'
+            && options.data('maxlength') < 32);
         });
 
         jQuery.validator.addMethod("validationFunctionForDateTime", function(value, element, options) {
             var dt_value = value;
             var theType = options;
             if (theType == "date") {
-                if (! isDate(dt_value)) {
-                    return false;
-                }
-                return true;
+                return isDate(dt_value);
+
             } else if (theType == "time") {
-                if (! isTime(dt_value)) {
-                    return false;
-                }
-                return true;
+                return isTime(dt_value);
+
             } else if (theType == "datetime" || theType == "timestamp") {
                 var tmstmp = false;
                 dt_value = dt_value.trim();
@@ -414,17 +373,11 @@ AJAX.registerOnload('tbl_change.js', function () {
                 }
                 var dv = dt_value.indexOf(" ");
                 if (dv == -1) { // Only the date component, which is valid
-                    if (!  isDate(dt_value, tmstmp)) {
-                        return false;
-                    }
-                    return true;
-                } else {
-                    if (! (isDate(dt_value.substring(0, dv), tmstmp)
-                        && isTime(dt_value.substring(dv + 1)))) {
-                        return false;
-                    }
-                    return true;
+                    return isDate(dt_value, tmstmp);
                 }
+
+                return isDate(dt_value.substring(0, dv), tmstmp)
+                    && isTime(dt_value.substring(dv + 1));
             }
         });
         /*
@@ -432,7 +385,7 @@ AJAX.registerOnload('tbl_change.js', function () {
          * after initiation of functions
          */
         extendingValidatorMessages();
-    };
+    }
 
     $.datepicker.initialized = false;
 
@@ -690,14 +643,21 @@ AJAX.registerOnload('tbl_change.js', function () {
                     /** name of new {@link $last_checkbox} */
                     var new_name = last_checkbox_name.replace(/\d+/, last_checkbox_index + 1);
 
+                    $('<br/><div class="clearfloat"></div>')
+                    .insertBefore("table.insertRowTable:last");
+
                     $last_checkbox
                     .clone()
                     .attr({'id': new_name, 'name': new_name})
                     .prop('checked', true)
-                    .add('label[for^=insert_ignore]:last')
+                    .insertBefore("table.insertRowTable:last");
+
+                    $('label[for^=insert_ignore]:last')
                     .clone()
                     .attr('for', new_name)
-                    .before('<br />')
+                    .insertBefore("table.insertRowTable:last");
+
+                    $('<br/>')
                     .insertBefore("table.insertRowTable:last");
                 }
                 curr_rows++;
@@ -729,90 +689,6 @@ AJAX.registerOnload('tbl_change.js', function () {
         }
         // Add all the required datepickers back
         addDateTimePicker();
-    });
-
-    /**
-     * @var $function_option_dialog object holds dialog for selected function options.
-     */
-    var $function_option_dialog = null;
-
-    PMA_tooltip(
-        $("select[name*='funcs']"),
-        'select',
-        PMA_messages.strFunctionHint
-    );
-
-    $(document).on('click', "select[name*='funcs']", function (event) {
-        if (! event.shiftKey) {
-            return false;
-        }
-
-        // Name of selected function.
-        var functionName = $(this).find("option:selected").html();
-        var currId = $(this).attr("id");
-        // Name of column.
-        var columnName = $(this).closest("tr").find("input[name*='fields_name']").val();
-        var targetRows = $("tr").has("input[value='" + columnName + "']");
-        var salt;
-        var copySalt = false;
-
-        if (functionName === 'AES_ENCRYPT' ||
-                functionName === 'AES_DECRYPT' ||
-                functionName === 'DES_ENCRYPT' ||
-                functionName === 'DES_DECRYPT' ||
-                functionName === 'ENCRYPT') {
-            // Dialog title.
-            var title = functionName;
-            // Dialog buttons functions.
-            var buttonOptions = {};
-            buttonOptions[PMA_messages.strYes] = function () {
-                // Go function.
-                copySalt = true;
-                salt = $("#salt_" + currId).val();
-                applyFunctionToAllRows(currId, functionName, copySalt, salt, targetRows);
-                $(this).dialog("close");
-            };
-            buttonOptions[PMA_messages.strNo] = function () {
-                copySalt = false;
-                salt = "";
-                applyFunctionToAllRows(currId, functionName, copySalt, salt, targetRows);
-                $(this).dialog("close");
-            };
-
-            // Contents of dialog.
-            var dialog = "<div>" +
-                        "<fieldset>" +
-                        "<span style='font-weight: bold;'>" +
-                        PMA_messages.strCopyEncryptionKey +
-                        "</fieldset>" +
-                        "</div>";
-
-            // Show the dialog
-            var width = parseInt(
-                (parseInt($('html').css('font-size'), 10) / 13) * 340,
-                10
-            );
-            if (! width) {
-                width = 340;
-            }
-
-            $function_option_dialog = $(dialog).dialog({
-                minWidth: width,
-                modal: true,
-                title: title,
-                buttons: buttonOptions,
-                resizable: false,
-                open: function () {
-                    // Focus the "Go" button after opening the dialog
-                    $(this).closest('.ui-dialog').find('.ui-dialog-buttonpane button:first').focus();
-                },
-                close: function () {
-                    $(this).remove();
-                }
-            });
-        }
-
-        applyFunctionToAllRows(currId, functionName, copySalt, "", targetRows);
     });
 });
 

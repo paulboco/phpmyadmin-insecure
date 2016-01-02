@@ -42,8 +42,8 @@ if (getcwd() == dirname(__FILE__)) {
  * Minimum PHP version; can't call PMA_fatalError() which uses a
  * PHP 5 function, so cannot easily localize this message.
  */
-if (version_compare(PHP_VERSION, '5.3.0', 'lt')) {
-    die('PHP 5.3+ is required');
+if (version_compare(PHP_VERSION, '5.5.0', 'lt')) {
+    die('PHP 5.5+ is required');
 }
 
 /**
@@ -314,16 +314,17 @@ $GLOBALS['PMA_Config']->enableBc();
  * when changing something related to PMA cookies, increment the cookie version
  */
 $pma_cookie_version = 4;
-if (isset($_COOKIE)
-    && (isset($_COOKIE['pmaCookieVer'])
-    && $_COOKIE['pmaCookieVer'] < $pma_cookie_version)
-) {
-    // delete all cookies
-    foreach ($_COOKIE as $cookie_name => $tmp) {
-        $GLOBALS['PMA_Config']->removeCookie($cookie_name);
+if (isset($_COOKIE)) {
+    if (! isset($_COOKIE['pmaCookieVer'])
+        || $_COOKIE['pmaCookieVer'] != $pma_cookie_version
+    ) {
+        // delete all cookies
+        foreach ($_COOKIE as $cookie_name => $tmp) {
+            $GLOBALS['PMA_Config']->removeCookie($cookie_name);
+        }
+        $_COOKIE = array();
+        $GLOBALS['PMA_Config']->setCookie('pmaCookieVer', $pma_cookie_version);
     }
-    $_COOKIE = array();
-    $GLOBALS['PMA_Config']->setCookie('pmaCookieVer', $pma_cookie_version);
 }
 
 
@@ -331,7 +332,7 @@ if (isset($_COOKIE)
  * check HTTPS connection
  */
 if ($GLOBALS['PMA_Config']->get('ForceSSL')
-    && ! $GLOBALS['PMA_Config']->get('is_https')
+    && ! $GLOBALS['PMA_Config']->detectHttps()
 ) {
     // grab SSL URL
     $url = $GLOBALS['PMA_Config']->getSSLUri();
@@ -376,7 +377,6 @@ $goto_whitelist = array(
     'db_structure.php',
     'db_import.php',
     'db_operations.php',
-    'db_printview.php',
     'db_search.php',
     'db_routines.php',
     'export.php',
@@ -408,7 +408,6 @@ $goto_whitelist = array(
     'tbl_create.php',
     'tbl_import.php',
     'tbl_indexes.php',
-    'tbl_printview.php',
     'tbl_sql.php',
     'tbl_export.php',
     'tbl_operations.php',
@@ -487,7 +486,7 @@ if ($token_mismatch) {
         'pma_lang', 'pma_collation_connection',
         /* Possible login form */
         'pma_servername', 'pma_username', 'pma_password',
-        'recaptcha_challenge_field', 'recaptcha_response_field',
+        'g-recaptcha-response',
         /* Needed to send the correct reply */
         'ajax_request',
         /* Permit to log out even if there is a token mismatch */
@@ -870,11 +869,14 @@ if (! defined('PMA_MINIMUM_COMMON')) {
         include_once  './libraries/plugins/auth/' . $auth_class . '.class.php';
         // todo: add plugin manager
         $plugin_manager = null;
+        /** @var AuthenticationPlugin $auth_plugin */
         $auth_plugin = new $auth_class($plugin_manager);
 
         if (! $auth_plugin->authCheck()) {
             /* Force generating of new session on login */
-            PMA_secureSession();
+            if ($token_provided) {
+                PMA_secureSession();
+            }
             $auth_plugin->auth();
         } else {
             $auth_plugin->authSetUser();
@@ -985,6 +987,7 @@ if (! defined('PMA_MINIMUM_COMMON')) {
         }
 
         // Connects to the server (validates user's login)
+        /** @var PMA_DatabaseInterface $userlink */
         $userlink = $GLOBALS['dbi']->connect(
             $cfg['Server']['user'], $cfg['Server']['password'], false
         );
@@ -1029,10 +1032,10 @@ if (! defined('PMA_MINIMUM_COMMON')) {
         /* Log success */
         PMA_logUser($cfg['Server']['user']);
 
-        if (PMA_MYSQL_INT_VERSION < 50500) {
+        if (PMA_MYSQL_INT_VERSION < $cfg['MysqlMinVersion']['internal']) {
             PMA_fatalError(
                 __('You should upgrade to %s %s or later.'),
-                array('MySQL', '5.5.0')
+                array('MySQL', $cfg['MysqlMinVersion']['human'])
             );
         }
 
@@ -1054,9 +1057,32 @@ if (! defined('PMA_MINIMUM_COMMON')) {
         }
 
         /**
-         * SQL Parser code
+         * Charset information
          */
-        include_once './libraries/sqlparser.lib.php';
+        if (!PMA_DRIZZLE) {
+            include_once './libraries/mysql_charsets.inc.php';
+        }
+        if (!isset($mysql_charsets)) {
+            $mysql_charsets = array();
+            $mysql_collations_flat = array();
+        }
+
+        /**
+         * Initializes the SQL parsing library.
+         */
+        include_once SQL_PARSER_AUTOLOAD;
+
+        // Loads closest context to this version.
+        SqlParser\Context::loadClosest(
+            (PMA_DRIZZLE ? 'Drizzle' : 'MySql') . PMA_MYSQL_INT_VERSION
+        );
+
+        // Sets the default delimiter (if specified).
+        if (!empty($_REQUEST['sql_delimiter'])) {
+            SqlParser\Lexer::$DEFAULT_DELIMITER = $_REQUEST['sql_delimiter'];
+        }
+
+        // TODO: Set SQL modes too.
 
         /**
          * the PMA_List_Database class
@@ -1096,6 +1122,10 @@ if (! defined('PMA_MINIMUM_COMMON')) {
         // the checkbox was unchecked
         unset($_SESSION['profiling']);
     }
+
+    // load user preferences
+    $GLOBALS['PMA_Config']->loadUserPreferences();
+
     /**
      * Inclusion of profiling scripts is needed on various
      * pages like sql, tbl_sql, db_sql, tbl_select
@@ -1125,10 +1155,10 @@ if (! defined('PMA_MINIMUM_COMMON')) {
         );
         exit;
     }
-} // end if !defined('PMA_MINIMUM_COMMON')
-
-// load user preferences
-$GLOBALS['PMA_Config']->loadUserPreferences();
+} else { // end if !defined('PMA_MINIMUM_COMMON')
+    // load user preferences
+    $GLOBALS['PMA_Config']->loadUserPreferences();
+}
 
 // remove sensitive values from session
 $GLOBALS['PMA_Config']->set('blowfish_secret', '');
@@ -1189,6 +1219,7 @@ if (!empty($__redirect) && in_array($__redirect, $goto_whitelist)) {
 
 // If Zero configuration mode enabled, check PMA tables in current db.
 if (! defined('PMA_MINIMUM_COMMON')
+    && ! empty($GLOBALS['server'])
     && isset($GLOBALS['cfg']['ZeroConf'])
     && $GLOBALS['cfg']['ZeroConf'] == true
 ) {
@@ -1207,4 +1238,7 @@ if (! defined('PMA_MINIMUM_COMMON')
         }
     }
 }
-?>
+
+if (! defined('PMA_MINIMUM_COMMON')) {
+    include_once 'libraries/config/page_settings.class.php';
+}

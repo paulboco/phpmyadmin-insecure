@@ -56,6 +56,7 @@ class PMA_Schema_PDF extends PMA_PDF
     private $_offline;
     private $_pageNumber;
     private $_withDoc;
+    private $_db;
 
     /**
      * Constructs PDF for schema export.
@@ -65,15 +66,17 @@ class PMA_Schema_PDF extends PMA_PDF
      * @param string  $paper       the format used for pages
      * @param int     $pageNumber  schema page number that is being exported
      * @param boolean $withDoc     with document dictionary
+     * @param string  $db          the database name
      *
      * @access public
      */
     public function __construct(
-        $orientation, $unit, $paper, $pageNumber, $withDoc
+        $orientation, $unit, $paper, $pageNumber, $withDoc, $db
     ) {
         parent::__construct($orientation, $unit, $paper);
         $this->_pageNumber = $pageNumber;
         $this->_withDoc = $withDoc;
+        $this->_db = $db;
     }
 
     /**
@@ -97,11 +100,9 @@ class PMA_Schema_PDF extends PMA_PDF
      * @param float|int $leftMargin The left margin
      * @param float|int $topMargin  The top margin
      *
-     * @access public
-     *
      * @return void
      */
-    function setScale($scale = 1, $xMin = 0, $yMin = 0,
+    public function setScale($scale = 1, $xMin = 0, $yMin = 0,
         $leftMargin = -1, $topMargin = -1
     ) {
         $this->scale = $scale;
@@ -127,13 +128,11 @@ class PMA_Schema_PDF extends PMA_PDF
      * @param integer   $fill   Whether to fill the cell with a color or not
      * @param string    $link   Link
      *
-     * @access public
-     *
      * @return void
      *
      * @see TCPDF::Cell()
      */
-    function cellScale($w, $h = 0, $txt = '', $border = 0, $ln = 0,
+    public function cellScale($w, $h = 0, $txt = '', $border = 0, $ln = 0,
         $align = '', $fill = 0, $link = ''
     ) {
         $h = $h / $this->scale;
@@ -149,13 +148,11 @@ class PMA_Schema_PDF extends PMA_PDF
      * @param float $x2 The horizontal position of the ending point
      * @param float $y2 The vertical position of the ending point
      *
-     * @access public
-     *
      * @return void
      *
      * @see TCPDF::Line()
      */
-    function lineScale($x1, $y1, $x2, $y2)
+    public function lineScale($x1, $y1, $x2, $y2)
     {
         $x1 = ($x1 - $this->_xMin) / $this->scale + $this->leftMargin;
         $y1 = ($y1 - $this->_yMin) / $this->scale + $this->topMargin;
@@ -170,13 +167,11 @@ class PMA_Schema_PDF extends PMA_PDF
      * @param float $x The x position
      * @param float $y The y position
      *
-     * @access public
-     *
      * @return void
      *
      * @see TCPDF::SetXY()
      */
-    function setXyScale($x, $y)
+    public function setXyScale($x, $y)
     {
         $x = ($x - $this->_xMin) / $this->scale + $this->leftMargin;
         $y = ($y - $this->_yMin) / $this->scale + $this->topMargin;
@@ -188,13 +183,11 @@ class PMA_Schema_PDF extends PMA_PDF
      *
      * @param float $x The x position
      *
-     * @access public
-     *
      * @return void
      *
      * @see TCPDF::SetX()
      */
-    function setXScale($x)
+    public function setXScale($x)
     {
         $x = ($x - $this->_xMin) / $this->scale + $this->leftMargin;
         $this->SetX($x);
@@ -205,13 +198,11 @@ class PMA_Schema_PDF extends PMA_PDF
      *
      * @param float $size The font size (in points)
      *
-     * @access public
-     *
      * @return void
      *
      * @see TCPDF::SetFontSize()
      */
-    function setFontSizeScale($size)
+    public function setFontSizeScale($size)
     {
         // Set font size in points
         $size = $size / $this->scale;
@@ -223,13 +214,11 @@ class PMA_Schema_PDF extends PMA_PDF
      *
      * @param float $width The line width
      *
-     * @access public
-     *
      * @return void
      *
      * @see TCPDF::SetLineWidth()
      */
-    function setLineWidthScale($width)
+    public function setLineWidthScale($width)
     {
         $width = $width / $this->scale;
         $this->SetLineWidth($width);
@@ -242,7 +231,7 @@ class PMA_Schema_PDF extends PMA_PDF
      *
      * @see TCPDF::Header()
      */
-    function Header()
+    public function Header()
     {
         // We only show this if we find something in the new pdf_pages table
 
@@ -254,7 +243,7 @@ class PMA_Schema_PDF extends PMA_PDF
                 $test_query = 'SELECT * FROM '
                     . PMA_Util::backquote($GLOBALS['cfgRelation']['db']) . '.'
                     . PMA_Util::backquote($GLOBALS['cfgRelation']['pdf_pages'])
-                    . ' WHERE db_name = \'' . PMA_Util::sqlAddSlashes($GLOBALS['db'])
+                    . ' WHERE db_name = \'' . PMA_Util::sqlAddSlashes($this->_db)
                     . '\' AND page_nr = \'' . $this->_pageNumber . '\'';
                 $test_rs = PMA_queryAsControlUser($test_query);
                 $pages = @$GLOBALS['dbi']->fetchAssoc($test_rs);
@@ -275,7 +264,7 @@ class PMA_Schema_PDF extends PMA_PDF
      *
      * @see PMA_PDF::Footer()
      */
-    function Footer()
+    public function Footer()
     {
         if ($this->_withDoc) {
             parent::Footer();
@@ -289,7 +278,7 @@ class PMA_Schema_PDF extends PMA_PDF
      *
      * @return void
      */
-    function SetWidths($w)
+    public function SetWidths($w)
     {
         // column widths
         $this->widths = $w;
@@ -303,7 +292,7 @@ class PMA_Schema_PDF extends PMA_PDF
      *
      * @return void
      */
-    function Row($data, $links)
+    public function Row($data, $links)
     {
         // line height
         $nb = 0;
@@ -344,7 +333,7 @@ class PMA_Schema_PDF extends PMA_PDF
      *
      * @return int
      */
-    function NbLines($w, $txt)
+    public function NbLines($w, $txt)
     {
         $cw = &$this->CurrentFont['cw'];
         if ($w == 0) {
@@ -429,6 +418,7 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
     private $_showGrid;
     private $_withDoc;
     private $_tableOrder;
+
     /**
      * @var Table_Stats_Pdf[]
      */
@@ -444,6 +434,7 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
     private $_leftMargin = 10;
     private $_rightMargin = 10;
     private $_tablewidth;
+
     /**
      * @var Relation_Stats_Pdf[]
      */
@@ -452,10 +443,11 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
     /**
      * The "PMA_Pdf_Relation_Schema" constructor
      *
-     * @access private
+     * @param string $db database name
+     *
      * @see PMA_Schema_PDF
      */
-    function __construct()
+    public function __construct($db)
     {
         $this->setShowGrid(isset($_REQUEST['pdf_show_grid']));
         $this->setShowColor(isset($_REQUEST['pdf_show_color']));
@@ -469,15 +461,16 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
 
         // Initializes a new document
         parent::__construct(
+            $db,
             new PMA_Schema_PDF(
                 $this->orientation, 'mm', $this->paper,
-                $this->pageNumber, $this->_withDoc
+                $this->pageNumber, $this->_withDoc, $db
             )
         );
         $this->diagram->SetTitle(
             sprintf(
                 __('Schema of the %s database'),
-                $GLOBALS['db']
+                $this->db
             )
         );
         $this->diagram->setCMargin(0);
@@ -515,6 +508,7 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
             if (! isset($this->_tables[$table])) {
                 $this->_tables[$table] = new Table_Stats_Pdf(
                     $this->diagram,
+                    $this->db,
                     $table,
                     null,
                     $this->pageNumber,
@@ -531,12 +525,14 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
         }
 
         // Defines the scale factor
+        $innerWidth = $this->diagram->getPageWidth() - $this->_rightMargin
+            - $this->_leftMargin;
+        $innerHeight = $this->diagram->getPageHeight() - $this->_topMargin
+            - $this->_bottomMargin;
         $this->_scale = ceil(
             max(
-                ($this->_xMax - $this->_xMin)
-                / ($this->diagram->getPageWidth() - $this->_rightMargin - $this->_leftMargin),
-                ($this->_yMax - $this->_yMin)
-                / ($this->diagram->getPageHeight() - $this->_topMargin - $this->_bottomMargin)
+                ($this->_xMax - $this->_xMin) / $innerWidth,
+                ($this->_yMax - $this->_yMin) / $innerHeight
             ) * 100
         ) / 100;
 
@@ -560,7 +556,7 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
         // and finding its foreigns is OK (then we can support innodb)
         $seen_a_relation = false;
         foreach ($alltables as $one_table) {
-            $exist_rel = PMA_getForeigners($GLOBALS['db'], $one_table, '', 'both');
+            $exist_rel = PMA_getForeigners($this->db, $one_table, '', 'both');
             if (!$exist_rel) {
                 continue;
             }
@@ -614,8 +610,6 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
      * @param boolean $value show grid of the document or not
      *
      * @return void
-     *
-     * @access public
      */
     public function setShowGrid($value)
     {
@@ -638,8 +632,6 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
      * @param boolean $value show selected database data dictionary or not
      *
      * @return void
-     *
-     * @access public
      */
     public function setWithDataDictionary($value)
     {
@@ -662,8 +654,6 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
      * @param string $value table order
      *
      * @return void
-     *
-     * @access public
      */
     public function setTableOrder($value)
     {
@@ -684,9 +674,8 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
      * Output Pdf Document for download
      *
      * @return void
-     * @access public
      */
-    function showOutput()
+    public function showOutput()
     {
         $this->diagram->Download($this->getFileName('.pdf'));
     }
@@ -697,8 +686,6 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
      * @param Table_Stats_Pdf $table The table name of which sets XY co-ordinates
      *
      * @return void
-     *
-     * @access private
      */
     private function _setMinMax($table)
     {
@@ -716,8 +703,6 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
      * @param string $foreignTable The foreign table name
      * @param string $foreignField The relation field in the foreign table
      *
-     * @access private
-     *
      * @return void
      *
      * @see _setMinMax
@@ -728,6 +713,7 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
         if (! isset($this->_tables[$masterTable])) {
             $this->_tables[$masterTable] = new Table_Stats_Pdf(
                 $this->diagram,
+                $this->db,
                 $masterTable,
                 null,
                 $this->pageNumber,
@@ -740,6 +726,7 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
         if (! isset($this->_tables[$foreignTable])) {
             $this->_tables[$foreignTable] = new Table_Stats_Pdf(
                 $this->diagram,
+                $this->db,
                 $foreignTable,
                 null,
                 $this->pageNumber,
@@ -761,8 +748,6 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
     /**
      * Draws the grid
      *
-     * @access private
-     *
      * @return void
      *
      * @see PMA_Schema_PDF
@@ -783,22 +768,19 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
         $this->diagram->SetMargins(0, 0);
         $this->diagram->SetDrawColor(200, 200, 200);
         // Draws horizontal lines
+        $innerHeight = $this->diagram->getPageHeight() - $topSpace - $bottomSpace;
         for ($l = 0,
-            $size = intval(
-                ($this->diagram->getPageHeight() - $topSpace - $bottomSpace) / $gridSize
-            );
+            $size = intval($innerHeight / $gridSize);
             $l <= $size;
-            $l++) {
+            $l++
+        ) {
             $this->diagram->line(
                 0, $l * $gridSize + $topSpace,
                 $this->diagram->getPageWidth(), $l * $gridSize + $topSpace
             );
             // Avoid duplicates
             if ($l > 0
-                && $l <= intval(
-                    ($this->diagram->getPageHeight() - $topSpace - $bottomSpace - $labelHeight)
-                    / $gridSize
-                )
+                && $l <= intval(($innerHeight - $labelHeight) / $gridSize)
             ) {
                 $this->diagram->SetXY(0, $l * $gridSize + $topSpace);
                 $label = (string) sprintf(
@@ -833,8 +815,6 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
     /**
      * Draws relation arrows
      *
-     * @access private
-     *
      * @return void
      *
      * @see Relation_Stats_Pdf::relationdraw()
@@ -850,8 +830,6 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
 
     /**
      * Draws tables
-     *
-     * @access private
      *
      * @return void
      *
@@ -879,7 +857,8 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
         $this->diagram->Ln(15);
         $i = 1;
         foreach ($alltables as $table) {
-            $this->diagram->PMA_links['doc'][$table]['-'] = $this->diagram->AddLink();
+            $this->diagram->PMA_links['doc'][$table]['-']
+                = $this->diagram->AddLink();
             $this->diagram->SetX(10);
             // $this->diagram->Ln(1);
             $this->diagram->Cell(
@@ -892,11 +871,12 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
                 'L', 0, $this->diagram->PMA_links['doc'][$table]['-']
             );
             // $this->diagram->Ln(1);
-            $fields = $GLOBALS['dbi']->getColumns($GLOBALS['db'], $table);
+            $fields = $GLOBALS['dbi']->getColumns($this->db, $table);
             foreach ($fields as $row) {
                 $this->diagram->SetX(20);
                 $field_name = $row['Field'];
-                $this->diagram->PMA_links['doc'][$table][$field_name] = $this->diagram->AddLink();
+                $this->diagram->PMA_links['doc'][$table][$field_name]
+                    = $this->diagram->AddLink();
                 //$this->diagram->Cell(
                 //    0, 6, $field_name, 0, 1,
                 //    'L', 0, $this->diagram->PMA_links['doc'][$table][$field_name]
@@ -921,9 +901,14 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
             $this->diagram->SetAutoPageBreak(true, 15);
             $this->diagram->addpage($this->orientation);
             $this->diagram->Bookmark($table);
-            $this->diagram->SetAlias('{' . sprintf("%02d", $z) . '}', $this->diagram->PageNo());
-            $this->diagram->PMA_links['RT'][$table]['-'] = $this->diagram->AddLink();
-            $this->diagram->SetLink($this->diagram->PMA_links['doc'][$table]['-'], -1);
+            $this->diagram->SetAlias(
+                '{' . sprintf("%02d", $z) . '}', $this->diagram->PageNo()
+            );
+            $this->diagram->PMA_links['RT'][$table]['-']
+                = $this->diagram->AddLink();
+            $this->diagram->SetLink(
+                $this->diagram->PMA_links['doc'][$table]['-'], -1
+            );
             $this->diagram->SetFont($this->_ff, 'B', 18);
             $this->diagram->Cell(
                 0, 8, $z . ' ' . $table, 1, 1,
@@ -933,15 +918,16 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
             $this->diagram->ln();
 
             $cfgRelation = PMA_getRelationsParam();
-            $comments = PMA_getComments($GLOBALS['db'], $table);
+            $comments = PMA_getComments($this->db, $table);
             if ($cfgRelation['mimework']) {
-                $mime_map = PMA_getMIME($GLOBALS['db'], $table, true);
+                $mime_map = PMA_getMIME($this->db, $table, true);
             }
 
             /**
              * Gets table information
              */
-            $showtable    = PMA_Table::sGetStatusInfo($GLOBALS['db'], $table);
+            $showtable = $GLOBALS['dbi']->getTable($this->db, $table)
+                ->getStatusInfo();
             $show_comment = isset($showtable['Comment'])
                 ? $showtable['Comment']
                 : '';
@@ -964,13 +950,11 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
             /**
              * Gets fields properties
              */
-            $columns = $GLOBALS['dbi']->getColumns($GLOBALS['db'], $table);
-            // Check if we can use Relations
-            if (!empty($cfgRelation['relation'])) {
-                // Find which tables are related with the current one and write it in
-                // an array
-                $res_rel = PMA_getForeigners($GLOBALS['db'], $table);
-            } // end if
+            $columns = $GLOBALS['dbi']->getColumns($this->db, $table);
+
+            // Find which tables are related with the current one and write it in
+            // an array
+            $res_rel = PMA_getForeigners($this->db, $table);
 
             /**
              * Displays the comments of the table if MySQL >= 3.23
@@ -978,22 +962,30 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
 
             $break = false;
             if (! empty($show_comment)) {
-                $this->diagram->Cell(0, 3, __('Table comments:') . ' ' . $show_comment, 0, 1);
+                $this->diagram->Cell(
+                    0, 3, __('Table comments:') . ' ' . $show_comment, 0, 1
+                );
                 $break = true;
             }
 
             if (! empty($create_time)) {
-                $this->diagram->Cell(0, 3, __('Creation:') . ' ' . $create_time, 0, 1);
+                $this->diagram->Cell(
+                    0, 3, __('Creation:') . ' ' . $create_time, 0, 1
+                );
                 $break = true;
             }
 
             if (! empty($update_time)) {
-                $this->diagram->Cell(0, 3, __('Last update:') . ' ' . $update_time, 0, 1);
+                $this->diagram->Cell(
+                    0, 3, __('Last update:') . ' ' . $update_time, 0, 1
+                );
                 $break = true;
             }
 
             if (! empty($check_time)) {
-                $this->diagram->Cell(0, 3, __('Last check:') . ' ' . $check_time, 0, 1);
+                $this->diagram->Cell(
+                    0, 3, __('Last check:') . ' ' . $check_time, 0, 1
+                );
                 $break = true;
             }
 
@@ -1052,15 +1044,18 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
                 }
                 $field_name = $row['Field'];
                 // $this->diagram->Ln();
-                $this->diagram->PMA_links['RT'][$table][$field_name] = $this->diagram->AddLink();
+                $this->diagram->PMA_links['RT'][$table][$field_name]
+                    = $this->diagram->AddLink();
                 $this->diagram->Bookmark($field_name, 1, -1);
-                $this->diagram->SetLink($this->diagram->PMA_links['doc'][$table][$field_name], -1);
+                $this->diagram->SetLink(
+                    $this->diagram->PMA_links['doc'][$table][$field_name], -1
+                );
                 $foreigner = PMA_searchColumnInForeigners($res_rel, $field_name);
 
                 $linksTo = '';
                 if ($foreigner) {
                     $linksTo = '-> ';
-                    if ($foreigner['foreign_db'] != $GLOBALS['db']) {
+                    if ($foreigner['foreign_db'] != $this->db) {
                         $linksTo .= $foreigner['foreign_db'] . '.';
                     }
                     $linksTo .= $foreigner['foreign_table']
@@ -1094,8 +1089,8 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
                 if ($foreigner
                     && isset($this->diagram->PMA_links['doc'][$foreigner['foreign_table']][$foreigner['foreign_field']])
                 ) {
-                    $links[6] = $this->diagram->PMA_links['doc'][$foreigner['foreign_table']]
-                        [$foreigner['foreign_field']];
+                    $links[6] = $this->diagram->PMA_links['doc']
+                        [$foreigner['foreign_table']][$foreigner['foreign_field']];
                 } else {
                     unset($links[6]);
                 }
@@ -1105,4 +1100,3 @@ class PMA_Pdf_Relation_Schema extends PMA_Export_Relation_Schema
         } //end each
     }
 }
-?>

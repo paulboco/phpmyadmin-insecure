@@ -34,6 +34,7 @@ class Table_Stats_Pdf extends TableStats
      * The "Table_Stats_Pdf" constructor
      *
      * @param object  $diagram        The PDF diagram
+     * @param string  $db             The database name
      * @param string  $tableName      The table name
      * @param integer $fontSize       The font size
      * @param integer $pageNumber     The current page number (from the
@@ -47,12 +48,12 @@ class Table_Stats_Pdf extends TableStats
      * @see PMA_Schema_PDF, Table_Stats_Pdf::Table_Stats_setWidth,
      *     Table_Stats_Pdf::Table_Stats_setHeight
      */
-    function __construct(
-        $diagram, $tableName, $fontSize, $pageNumber, &$sameWideWidth,
+    public function __construct(
+        $diagram, $db, $tableName, $fontSize, $pageNumber, &$sameWideWidth,
         $showKeys = false, $tableDimension = false, $offline = false
     ) {
         parent::__construct(
-            $diagram, $GLOBALS['db'], $pageNumber, $tableName,
+            $diagram, $db, $pageNumber, $tableName,
             $showKeys, $tableDimension, $offline
         );
 
@@ -210,4 +211,3 @@ class Table_Stats_Pdf extends TableStats
     }
 }
 
-?>

@@ -9,6 +9,8 @@ if (! defined('PHPMYADMIN')) {
     exit;
 }
 
+require_once './libraries/Template.class.php';
+
 /**
  * Defines the central_columns parameters for the current user
  *
@@ -25,9 +27,7 @@ function PMA_centralColumnsGetParams()
 
     $cfgRelation = PMA_getRelationsParam();
 
-    if (isset($cfgRelation['central_columnswork'])
-        && $cfgRelation['central_columnswork']
-    ) {
+    if ($cfgRelation['centralcolumnswork']) {
         $cfgCentralColumns = array(
             'user'  => $GLOBALS['cfg']['Server']['user'],
             'db'    => $cfgRelation['db'],
@@ -93,8 +93,8 @@ function PMA_getCentralColumnsCount($db)
     $GLOBALS['dbi']->selectDb($pmadb, $GLOBALS['controllink']);
     $central_list_table = $cfgCentralColumns['table'];
     $query = 'SELECT count(db_name) FROM ' .
-               PMA_Util::backquote($central_list_table) . ' '
-            . 'WHERE db_name = \'' . $db . '\';';
+        PMA_Util::backquote($central_list_table) . ' '
+        . 'WHERE db_name = \'' . $db . '\';';
     $res = $GLOBALS['dbi']->fetchResult(
         $query, null, null, $GLOBALS['controllink']
     );
@@ -189,15 +189,15 @@ function PMA_getInsertQuery($column, $def, $db, $central_list_table)
     $extra = isset($def['Extra'])?$def['Extra']:"";
     $default = isset($def['Default'])?$def['Default']:"";
     $insQuery = 'INSERT INTO '
-    . PMA_Util::backquote($central_list_table) . ' '
-    . 'VALUES ( \'' . PMA_Util::sqlAddSlashes($db) . '\' ,'
-    . '\'' . PMA_Util::sqlAddSlashes($column) . '\',\''
-    . PMA_Util::sqlAddSlashes($type) . '\','
-    . '\'' . PMA_Util::sqlAddSlashes($length) . '\',\''
-    . PMA_Util::sqlAddSlashes($collation) . '\','
-    . '\'' . PMA_Util::sqlAddSlashes($isNull) . '\','
-    . '\'' . implode(',', array($extra, $attribute))
-    . '\',\'' . PMA_Util::sqlAddSlashes($default) . '\');';
+        . PMA_Util::backquote($central_list_table) . ' '
+        . 'VALUES ( \'' . PMA_Util::sqlAddSlashes($db) . '\' ,'
+        . '\'' . PMA_Util::sqlAddSlashes($column) . '\',\''
+        . PMA_Util::sqlAddSlashes($type) . '\','
+        . '\'' . PMA_Util::sqlAddSlashes($length) . '\',\''
+        . PMA_Util::sqlAddSlashes($collation) . '\','
+        . '\'' . PMA_Util::sqlAddSlashes($isNull) . '\','
+        . '\'' . implode(',', array($extra, $attribute))
+        . '\',\'' . PMA_Util::sqlAddSlashes($default) . '\');';
     return $insQuery;
 }
 
@@ -253,13 +253,13 @@ function PMA_syncUniqueColumns($field_select, $isTable=true, $table=null)
             }
         }
     } else {
-        if ($table == null) {
+        if ($table === null) {
             $table = $_REQUEST['table'];
         }
         foreach ($field_select as $column) {
             $cols .= "'" . PMA_Util::sqlAddSlashes($column) . "',";
         }
-         $has_list = PMA_findExistingColNames($db, trim($cols, ','));
+        $has_list = PMA_findExistingColNames($db, trim($cols, ','));
         foreach ($field_select as $column) {
             if (!in_array($column, $has_list)) {
                 $has_list[] = $column;
@@ -275,7 +275,7 @@ function PMA_syncUniqueColumns($field_select, $isTable=true, $table=null)
             }
         }
     }
-    if ($existingCols) {
+    if (! empty($existingCols)) {
         $existingCols = implode(",", array_unique($existingCols));
         $message = PMA_Message::notice(
             sprintf(
@@ -292,7 +292,7 @@ function PMA_syncUniqueColumns($field_select, $isTable=true, $table=null)
         );
     }
     $GLOBALS['dbi']->selectDb($pmadb, $GLOBALS['controllink']);
-    if ($insQuery) {
+    if (! empty($insQuery)) {
         foreach ($insQuery as $query) {
             if (!$GLOBALS['dbi']->tryQuery($query, $GLOBALS['controllink'])) {
                 $message = PMA_Message::error(__('Could not add columns!'));
@@ -365,21 +365,21 @@ function PMA_deleteColumnsFromList($field_select, $isTable=true)
             }
         }
     }
-    if ($colNotExist) {
-            $colNotExist = implode(",", array_unique($colNotExist));
-            $message = PMA_Message::notice(
-                sprintf(
-                    __(
-                        'Couldn\'t remove Column(s) %1$s '
-                        . 'as they don\'t exist in central columns list!'
-                    ), htmlspecialchars($colNotExist)
-                )
-            );
+    if (!empty($colNotExist)) {
+        $colNotExist = implode(",", array_unique($colNotExist));
+        $message = PMA_Message::notice(
+            sprintf(
+                __(
+                    'Couldn\'t remove Column(s) %1$s '
+                    . 'as they don\'t exist in central columns list!'
+                ), htmlspecialchars($colNotExist)
+            )
+        );
     }
     $GLOBALS['dbi']->selectDb($pmadb, $GLOBALS['controllink']);
 
     $query = 'DELETE FROM ' . PMA_Util::backquote($central_list_table) . ' '
-                . 'WHERE db_name = \'' . $db . '\' AND col_name IN (' . $cols . ');';
+        . 'WHERE db_name = \'' . $db . '\' AND col_name IN (' . $cols . ');';
 
     if (!$GLOBALS['dbi']->tryQuery($query, $GLOBALS['controllink'])) {
         $message = PMA_Message::error(__('Could not remove columns!'));
@@ -488,7 +488,7 @@ function PMA_getCentralColumnsFromTable($db, $table, $allFields=false)
     }
     $cols = trim($cols, ',');
     $has_list = PMA_findExistingColNames($db, $cols, $allFields);
-    if (isset($has_list) && $has_list) {
+    if (! empty($has_list)) {
         return (array)$has_list;
     } else {
         return array();
@@ -534,24 +534,24 @@ function PMA_updateOneColumn($db, $orig_col_name, $col_name, $col_type,
         $query = PMA_getInsertQuery($col_name, $def, $db, $centralTable);
     } else {
         $query = 'UPDATE ' . PMA_Util::backquote($centralTable)
-                . ' SET col_type = \'' . PMA_Util::sqlAddSlashes($col_type) . '\''
-                . ', col_name = \'' . PMA_Util::sqlAddSlashes($col_name) . '\''
-                . ', col_length = \'' . PMA_Util::sqlAddSlashes($col_length) . '\''
-                . ', col_isNull = ' . $col_isNull
-                . ', col_collation = \'' . PMA_Util::sqlAddSlashes($collation) . '\''
-                . ', col_extra = \''
-                . implode(',', array($col_extra, $col_attribute)) . '\''
-                . ', col_default = \'' . PMA_Util::sqlAddSlashes($col_default) . '\''
-                . ' WHERE db_name = \'' . PMA_Util::sqlAddSlashes($db) . '\' '
-                . 'AND col_name = \'' . PMA_Util::sqlAddSlashes($orig_col_name)
-                . '\'';
+            . ' SET col_type = \'' . PMA_Util::sqlAddSlashes($col_type) . '\''
+            . ', col_name = \'' . PMA_Util::sqlAddSlashes($col_name) . '\''
+            . ', col_length = \'' . PMA_Util::sqlAddSlashes($col_length) . '\''
+            . ', col_isNull = ' . $col_isNull
+            . ', col_collation = \'' . PMA_Util::sqlAddSlashes($collation) . '\''
+            . ', col_extra = \''
+            . implode(',', array($col_extra, $col_attribute)) . '\''
+            . ', col_default = \'' . PMA_Util::sqlAddSlashes($col_default) . '\''
+            . ' WHERE db_name = \'' . PMA_Util::sqlAddSlashes($db) . '\' '
+            . 'AND col_name = \'' . PMA_Util::sqlAddSlashes($orig_col_name)
+            . '\'';
     }
     if (!$GLOBALS['dbi']->tryQuery($query, $GLOBALS['controllink'])) {
         return PMA_Message::error(
             $GLOBALS['dbi']->getError($GLOBALS['controllink'])
         );
     }
-     return true;
+    return true;
 }
 
 /**
@@ -565,23 +565,24 @@ function PMA_updateMultipleColumn()
     $col_name = $_POST['field_name'];
     $orig_col_name = $_POST['orig_col_name'];
     $col_default = $_POST['field_default_type'];
-    $col_extra = $_POST['col_extra'];
     $col_length = $_POST['field_length'];
     $col_attribute = $_POST['field_attribute'];
     $col_type = $_POST['field_type'];
     $collation = $_POST['field_collation'];
     $col_isNull = array();
+    $col_extra = array();
     $num_central_fields = count($orig_col_name);
     for ($i = 0; $i < $num_central_fields ; $i++) {
-        $col_isNull[$i] = isset($_POST['field_null'][$i])?1:0;
+        $col_isNull[$i] = isset($_POST['field_null'][$i]) ? 1 : 0;
+        $col_extra[$i] = isset($_POST['col_extra'][$i])
+            ? $_POST['col_extra'][$i] : '';
+
         if ($col_default[$i] == 'NONE') {
             $col_default[$i] = "";
         } else if ($col_default[$i] == 'USER_DEFINED') {
             $col_default[$i] = $_POST['field_default_value'][$i];
         }
-        if (! isset($_POST['col_extra'][$i])) {
-            $col_extra[$i] =  '';
-        }
+
         $message = PMA_updateOneColumn(
             $db, $orig_col_name[$i], $col_name[$i], $col_type[$i],
             $col_attribute[$i], $col_length[$i], $col_isNull[$i], $collation[$i],
@@ -591,7 +592,7 @@ function PMA_updateMultipleColumn()
             return $message;
         }
     }
-     return true;
+    return true;
 }
 
 /**
@@ -601,7 +602,7 @@ function PMA_updateMultipleColumn()
  * @param int    $pos        offset of first result with complete result set
  * @param string $db         current database
  *
- * @return html for table navigation in Central columns page
+ * @return string html for table navigation in Central columns page
  */
 function PMA_getHTMLforTableNavigation($total_rows, $pos, $db)
 {
@@ -676,7 +677,7 @@ function PMA_getHTMLforTableNavigation($total_rows, $pos, $db)
  * @param string  $title       title of the 'th' elements
  * @param integer $actionCount number of actions
  *
- * @return html for table header in central columns view/edit page
+ * @return string html for table header in central columns view/edit page
  */
 function PMA_getCentralColumnsTableHeader($class='', $title='', $actionCount=0)
 {
@@ -688,8 +689,8 @@ function PMA_getCentralColumnsTableHeader($class='', $title='', $actionCount=0)
     $tableheader = '<thead>';
     $tableheader .= '<tr>'
         . '<th class="' . $class . '"></th>'
-        . $action
         . '<th class="" style="display:none"></th>'
+        . $action
         . '<th class="' . $class . '" title="' . $title . '" data-column="name">'
         . __('Name') . '<div class="sorticon"></div></th>'
         . '<th class="' . $class . '" title="' . $title . '" data-column="type">'
@@ -738,7 +739,7 @@ function PMA_getCentralColumnsEditTableHeader($header_cells)
  *
  * @param string $db current database
  *
- * @return html dropdown for selecting table
+ * @return string html dropdown for selecting table
  */
 function PMA_getHTMLforTableDropdown($db)
 {
@@ -762,7 +763,7 @@ function PMA_getHTMLforTableDropdown($db)
  * @param string $db           current database to which selected table belongs
  * @param string $selected_tbl selected table
  *
- * @return html to select column
+ * @return string html to select column
  */
 function PMA_getHTMLforColumnDropdown($db, $selected_tbl)
 {
@@ -789,7 +790,7 @@ function PMA_getHTMLforColumnDropdown($db, $selected_tbl)
  * @param int    $pos        offset of first result with complete result set
  * @param string $db         current database
  *
- * @return html to add a column in the central list
+ * @return string html to add a column in the central list
  */
 function PMA_getHTMLforAddCentralColumn($total_rows, $pos, $db)
 {
@@ -831,7 +832,7 @@ function PMA_getHTMLforAddCentralColumn($total_rows, $pos, $db)
  * @param int     $row_num position the row in the table
  * @param string  $db      current database
  *
- * @return html of a particular row in the central columns table.
+ * @return string html of a particular row in the central columns table.
  */
 function PMA_getHTMLforCentralColumnsTableRow($row, $odd_row, $row_num, $db)
 {
@@ -861,23 +862,48 @@ function PMA_getHTMLforCentralColumnsTableRow($row, $odd_row, $row_num, $db)
         . '<span>' . htmlspecialchars($row['col_name']) . '</span>'
         . '<input name="orig_col_name" type="hidden" '
         . 'value="' . htmlspecialchars($row['col_name']) . '">'
-        . PMA_getHtmlForColumnName(
-            $row_num, 0, 0, array('Field'=>$row['col_name']),
-            array('central_columnswork'=>false)
-        )
+        . PMA\Template::get('columns_definitions/column_name')
+            ->render(
+                array(
+                'columnNumber' => $row_num,
+                'ci' => 0,
+                'ci_offset' => 0,
+                'columnMeta' => array(
+                    'Field'=>$row['col_name']
+                ),
+                'cfgRelation' => array(
+                    'centralcolumnswork' => false
+                )
+                )
+            )
         . '</td>';
     $tableHtml .=
         '<td name = "col_type" class="nowrap"><span>'
         . htmlspecialchars($row['col_type']) . '</span>'
-        . PMA_getHtmlForColumnType(
-            $row_num, 1, 0, /*overload*/mb_strtoupper($row['col_type']), array()
-        )
+        . PMA\Template::get('columns_definitions/column_type')
+            ->render(
+                array(
+                'columnNumber' => $row_num,
+                'ci' => 1,
+                'ci_offset' => 0,
+                'type_upper' => /*overload*/mb_strtoupper($row['col_type']),
+                'columnMeta' => array()
+                )
+            )
         . '</td>';
     $tableHtml .=
         '<td class="nowrap" name="col_length">'
         . '<span>' . ($row['col_length']?htmlspecialchars($row['col_length']):"")
         . '</span>'
-        . PMA_getHtmlForColumnLength($row_num, 2, 0, 8, $row['col_length'])
+        . PMA\Template::get('columns_definitions/column_length')->render(
+            array(
+                'columnNumber' => $row_num,
+                'ci' => 2,
+                'ci_offset' => 0,
+                'length_values_input_size' => 8,
+                'length_to_display' => $row['col_length']
+            )
+        )
         . '</td>';
 
     $meta = array();
@@ -895,42 +921,73 @@ function PMA_getHTMLforCentralColumnsTableRow($row, $odd_row, $row_num, $db)
     }
     $tableHtml .=
         '<td class="nowrap" name="col_default"><span>' . (isset($row['col_default'])
-        ? htmlspecialchars($row['col_default']) : 'None')
+            ? htmlspecialchars($row['col_default']) : 'None')
         . '</span>'
-        . PMA_getHtmlForColumnDefault(
-            $row_num, 3, 0, /*overload*/mb_strtoupper($row['col_type']), '', $meta
-        )
+        . PMA\Template::get('columns_definitions/column_default')
+            ->render(
+                array(
+                'columnNumber' => $row_num,
+                'ci' => 3,
+                'ci_offset' => 0,
+                'type_upper' => /*overload*/mb_strtoupper($row['col_type']),
+                'columnMeta' => $meta
+                )
+            )
         . '</td>';
 
     $tableHtml .=
         '<td name="collation" class="nowrap">'
         . '<span>' . htmlspecialchars($row['col_collation']) . '</span>'
-        . PMA_getHtmlForColumnCollation(
-            $row_num, 4, 0, array('Collation'=>$row['col_collation'])
+        . PMA_generateCharsetDropdownBox(
+            PMA_CSDROPDOWN_COLLATION, 'field_collation[' . $row_num . ']',
+            'field_' . $row_num . '_4', $row['col_collation'], false
         )
         . '</td>';
     $tableHtml .=
         '<td class="nowrap" name="col_attribute">'
         . '<span>' .
         ($row['col_attribute']
-        ? htmlspecialchars($row['col_attribute']) : "" )
+            ? htmlspecialchars($row['col_attribute']) : "" )
         . '</span>'
-        . PMA_getHtmlForColumnAttribute(
-            $row_num, 5, 0, array(), $row['col_attribute'], false, null
-        )
+        . PMA\Template::get('columns_definitions/column_attribute')
+            ->render(
+                array(
+                'columnNumber' => $row_num,
+                'ci' => 5,
+                'ci_offset' => 0,
+                'extracted_columnspec' => array(),
+                'columnMeta' => $row['col_attribute'],
+                'submit_attribute' => false,
+                )
+            )
         . '</td>';
     $tableHtml .=
         '<td class="nowrap" name="col_isNull">'
         . '<span>' . ($row['col_isNull'] ? __('Yes') : __('No'))
         . '</span>'
-        . PMA_getHtmlForColumnNull($row_num, 6, 0, array('Null'=>$row['col_isNull']))
+        . PMA\Template::get('columns_definitions/column_null')
+            ->render(
+                array(
+                'columnNumber' => $row_num,
+                'ci' => 6,
+                'ci_offset' => 0,
+                'columnMeta' => array(
+                    'Null' => $row['col_isNull']
+                )
+                )
+            )
         . '</td>';
 
     $tableHtml .=
         '<td class="nowrap" name="col_extra"><span>'
         . htmlspecialchars($row['col_extra']) . '</span>'
-        . PMA_getHtmlForColumnExtra(
-            $row_num, 7, 0, array('Extra'=>$row['col_extra'])
+        . PMA\Template::get('columns_definitions/column_extra')->render(
+            array(
+                'columnNumber' => $row_num,
+                'ci' => 7,
+                'ci_offset' => 0,
+                'columnMeta' => array('Extra'=>$row['col_extra'])
+            )
         )
         . '</td>';
 
@@ -947,7 +1004,7 @@ function PMA_getHTMLforCentralColumnsTableRow($row, $odd_row, $row_num, $db)
  * @param boolean $odd_row set true if the row is at odd number position
  * @param int     $row_num position the row in the table
  *
- * @return html of a particular row in the central columns table.
+ * @return string html of a particular row in the central columns table.
  */
 function PMA_getHTMLforCentralColumnsEditTableRow($row, $odd_row, $row_num)
 {
@@ -955,27 +1012,52 @@ function PMA_getHTMLforCentralColumnsEditTableRow($row, $odd_row, $row_num)
         . '<input name="orig_col_name[' . $row_num . ']" type="hidden" '
         . 'value="' . htmlspecialchars($row['col_name']) . '">'
         . '<td name="col_name" class="nowrap">'
-        . PMA_getHtmlForColumnName(
-            $row_num, 0, 0, array('Field'=>$row['col_name']),
-            array('central_columnswork'=>false)
-        )
+        . PMA\Template::get('columns_definitions/column_name')
+            ->render(
+                array(
+                'columnNumber' => $row_num,
+                'ci' => 0,
+                'ci_offset' => 0,
+                'columnMeta' => array(
+                    'Field' => $row['col_name']
+                ),
+                'cfgRelation' => array(
+                    'centralcolumnswork' => false
+                )
+                )
+            )
         . '</td>';
     $tableHtml .=
         '<td name = "col_type" class="nowrap">'
-        . PMA_getHtmlForColumnType(
-            $row_num, 1, 0, /*overload*/mb_strtoupper($row['col_type']), array()
-        )
+        . PMA\Template::get('columns_definitions/column_type')
+            ->render(
+                array(
+                'columnNumber' => $row_num,
+                'ci' => 1,
+                'ci_offset' => 0,
+                'type_upper' => /*overload*/mb_strtoupper($row['col_type']),
+                'columnMeta' => array()
+                )
+            )
         . '</td>';
     $tableHtml .=
         '<td class="nowrap" name="col_length">'
-        . PMA_getHtmlForColumnLength($row_num, 2, 0, 8, $row['col_length'])
+        . PMA\Template::get('columns_definitions/column_length')->render(
+            array(
+                'columnNumber' => $row_num,
+                'ci' => 2,
+                'ci_offset' => 0,
+                'length_values_input_size' => 8,
+                'length_to_display' => $row['col_length']
+            )
+        )
         . '</td>';
     $meta = array();
     if (!isset($row['col_default']) || $row['col_default'] == '') {
         $meta['DefaultType'] = 'NONE';
     } else {
         if ($row['col_default'] == 'CURRENT_TIMESTAMP'
-                || $row['col_default'] == 'NULL'
+            || $row['col_default'] == 'NULL'
         ) {
             $meta['DefaultType'] = $row['col_default'];
         } else {
@@ -985,32 +1067,64 @@ function PMA_getHTMLforCentralColumnsEditTableRow($row, $odd_row, $row_num)
     }
     $tableHtml .=
         '<td class="nowrap" name="col_default">'
-        . PMA_getHtmlForColumnDefault(
-                $row_num, 3, 0, /*overload*/mb_strtoupper($row['col_default']), '', $meta
-        )
+        . PMA\Template::get('columns_definitions/column_default')
+            ->render(
+                array(
+                'columnNumber' => $row_num,
+                'ci' => 3,
+                'ci_offset' => 0,
+                'type_upper' => /*overload*/mb_strtoupper($row['col_default']),
+                'columnMeta' => $meta
+                )
+            )
         . '</td>';
     $tableHtml .=
         '<td name="collation" class="nowrap">'
-        . PMA_getHtmlForColumnCollation(
-            $row_num, 4, 0, array('Collation'=>$row['col_collation'])
+        . PMA_generateCharsetDropdownBox(
+            PMA_CSDROPDOWN_COLLATION, 'field_collation[' . $row_num . ']',
+            'field_' . $row_num . '_4', $row['col_collation'], false
         )
         . '</td>';
     $tableHtml .=
         '<td class="nowrap" name="col_attribute">'
-        . PMA_getHtmlForColumnAttribute(
-            $row_num, 5, 0, array("attribute"=>$row['col_attribute']),
-            array(), false, null
-        )
+        . PMA\Template::get('columns_definitions/column_attribute')
+            ->render(
+                array(
+                'columnNumber' => $row_num,
+                'ci' => 5,
+                'ci_offset' => 0,
+                'extracted_columnspec' => array(
+                    'attribute' => $row['col_attribute']
+                ),
+                'columnMeta' => array(),
+                'submit_attribute' => false,
+                )
+            )
         . '</td>';
     $tableHtml .=
         '<td class="nowrap" name="col_isNull">'
-        . PMA_getHtmlForColumnNull($row_num, 6, 0, array('Null'=>$row['col_isNull']))
+        . PMA\Template::get('columns_definitions/column_null')
+            ->render(
+                array(
+                'columnNumber' => $row_num,
+                'ci' => 6,
+                'ci_offset' => 0,
+                'columnMeta' => array(
+                    'Null' => $row['col_isNull']
+                )
+                )
+            )
         . '</td>';
-    
+
     $tableHtml .=
         '<td class="nowrap" name="col_extra">'
-        . PMA_getHtmlForColumnExtra(
-            $row_num, 7, 0, array('Extra' => $row['col_extra'])
+        . PMA\Template::get('columns_definitions/column_extra')->render(
+            array(
+                'columnNumber' => $row_num,
+                'ci' => 7,
+                'ci_offset' => 0,
+                'columnMeta' => array('Extra' => $row['col_extra'])
+            )
         )
         . '</td>';
     $tableHtml .= '</tr>';
@@ -1024,7 +1138,8 @@ function PMA_getHTMLforCentralColumnsEditTableRow($row, $odd_row, $row_num)
  * @param string $db    selected database
  * @param string $table current table name
  *
- * @return encoded list of columns present in central list for the given database
+ * @return string encoded list of columns present in central list for the given
+ *                database
  */
 function PMA_getCentralColumnsListRaw($db, $table)
 {
@@ -1035,7 +1150,7 @@ function PMA_getCentralColumnsListRaw($db, $table)
     $centralTable = $cfgCentralColumns['table'];
     if (empty($table) || $table == '') {
         $query = 'SELECT * FROM ' . PMA_Util::backquote($centralTable) . ' '
-                . 'WHERE db_name = \'' . $db . '\';';
+            . 'WHERE db_name = \'' . $db . '\';';
     } else {
         $GLOBALS['dbi']->selectDb($db, $GLOBALS['userlink']);
         $columns = (array) $GLOBALS['dbi']->getColumnNames(
@@ -1091,7 +1206,7 @@ function PMA_getCentralColumnsTableFooter($pmaThemeImage, $text_dir)
  * function generate and return the table footer for
  * multiple edit central columns page
  *
- * @return html for table footer in central columns multi edit page
+ * @return string html for table footer in central columns multi edit page
  */
 function PMA_getCentralColumnsEditTableFooter()
 {
@@ -1139,7 +1254,8 @@ function PMA_handleColumnExtra(&$columns_list)
  *
  * @param string $db current database
  *
- * @return html of the form to let user add a new user defined column to the list
+ * @return string html of the form to let user add a new user defined column to the
+ *                list
  */
 function PMA_getHTMLforAddNewColumn($db)
 {
@@ -1156,32 +1272,93 @@ function PMA_getHTMLforAddNewColumn($db)
     $addNewColumn .= '<tr>'
         . '<td></td>'
         . '<td name="col_name" class="nowrap">'
-        .  PMA_getHtmlForColumnName(
-            0, 0, 0, array(), array('central_columnswork'=>false)
-        )
+        . PMA\Template::get('columns_definitions/column_name')
+            ->render(
+                array(
+                'columnNumber' => 0,
+                'ci' => 0,
+                'ci_offset' => 0,
+                'columnMeta' => array(),
+                'cfgRelation' => array(
+                    'centralcolumnswork' => false
+                )
+                )
+            )
         . '</td>'
         . '<td name = "col_type" class="nowrap">'
-        .  PMA_getHtmlForColumnType(0, 1, 0, '', array())
+        . PMA\Template::get('columns_definitions/column_type')
+            ->render(
+                array(
+                'columnNumber' => 0,
+                'ci' => 1,
+                'ci_offset' => 0,
+                'type_upper' => '',
+                'columnMeta' => array()
+                )
+            )
         . '</td>'
         . '<td class="nowrap" name="col_length">'
-        . PMA_getHtmlForColumnLength(0, 2, 0, 8, '')
+        . PMA\Template::get('columns_definitions/column_length')->render(
+            array(
+                'columnNumber' => 0,
+                'ci' => 2,
+                'ci_offset' => 0,
+                'length_values_input_size' => 8,
+                'length_to_display' => ''
+            )
+        )
         . '</td>'
         . '<td class="nowrap" name="col_default">'
-        . PMA_getHtmlForColumnDefault(0, 3, 0, '', '', array())
+        . PMA\Template::get('columns_definitions/column_default')
+            ->render(
+                array(
+                'columnNumber' => 0,
+                'ci' => 3,
+                'ci_offset' => 0,
+                'type_upper' => '',
+                'columnMeta' => array()
+                )
+            )
         . '</td>'
         . '<td name="collation" class="nowrap">'
-        . PMA_getHtmlForColumnCollation(
-            0, 4, 0, array()
+        . PMA_generateCharsetDropdownBox(
+            PMA_CSDROPDOWN_COLLATION, 'field_collation[0]',
+            'field_0_4', null, false
         )
         . '</td>'
         . '<td class="nowrap" name="col_attribute">'
-        . PMA_getHtmlForColumnAttribute(0, 5, 0, array(), array(), false, null)
+        . PMA\Template::get('columns_definitions/column_attribute')
+            ->render(
+                array(
+                'columnNumber' => 0,
+                'ci' => 5,
+                'ci_offset' => 0,
+                'extracted_columnspec' => array(),
+                'columnMeta' => array(),
+                'submit_attribute' => false,
+                )
+            )
         . '</td>'
         . '<td class="nowrap" name="col_isNull">'
-        . PMA_getHtmlForColumnNull(0, 6, 0, array())
+        . PMA\Template::get('columns_definitions/column_null')
+            ->render(
+                array(
+                'columnNumber' => 0,
+                'ci' => 6,
+                'ci_offset' => 0,
+                'columnMeta' => array()
+                )
+            )
         . '</td>'
         . '<td class="nowrap" name="col_extra">'
-        . PMA_getHtmlForColumnExtra(0, 7, 0, array())
+        . PMA\Template::get('columns_definitions/column_extra')->render(
+            array(
+                'columnNumber' => 0,
+                'ci' => 7,
+                'ci_offset' => 0,
+                'columnMeta' => array()
+            )
+        )
         . '</td>'
         . ' <td>'
         . '<input id="add_column_save" type="submit" '
@@ -1229,4 +1406,3 @@ function PMA_getHTMLforEditingPage($selected_fld,$selected_db)
     $html .= '</form>';
     return $html;
 }
-?>

@@ -35,7 +35,7 @@ class PMA_ExportPdf extends PMA_PDF
      *
      * @return boolean true in case of page break, false otherwise.
      */
-    function checkPageBreak($h = 0, $y = '', $addpage = true)
+    public function checkPageBreak($h = 0, $y = '', $addpage = true)
     {
         if (TCPDF_STATIC::empty_string($y)) {
             $y = $this->y;
@@ -84,7 +84,7 @@ class PMA_ExportPdf extends PMA_PDF
      *
      * @return void
      */
-    function Header()
+    public function Header()
     {
         global $maxY;
         // We don't want automatic page breaks while generating header
@@ -169,7 +169,7 @@ class PMA_ExportPdf extends PMA_PDF
      *
      * @return void
      */
-    function morepagestable($lineheight = 8)
+    public function morepagestable($lineheight = 8)
     {
         // some things to set and 'remember'
         $l = $this->lMargin;
@@ -254,7 +254,7 @@ class PMA_ExportPdf extends PMA_PDF
      *
      * @return void
      */
-    function setAttributes($attr = array())
+    public function setAttributes($attr = array())
     {
         foreach ($attr as $key => $val) {
             $this->$key = $val ;
@@ -269,7 +269,7 @@ class PMA_ExportPdf extends PMA_PDF
      *
      * @return void
      */
-    function setTopMargin($topMargin)
+    public function setTopMargin($topMargin)
     {
         $this->tMargin = $topMargin;
     }
@@ -279,15 +279,19 @@ class PMA_ExportPdf extends PMA_PDF
      *
      * @param string $db    database name
      * @param string $table table name
+     *
+     * @return void
      */
     public function getTriggers($db, $table)
     {
-        $i=0;
+        $i = 0;
         $triggers = $GLOBALS['dbi']->getTriggers($db, $table);
         foreach ($triggers as $trigger) {
             $i++; break;
         }
-        if ($i==0) return; //prevents printing blank trigger list for any table
+        if ($i == 0) {
+            return; //prevents printing blank trigger list for any table
+        }
 
         unset($this->tablewidths);
         unset($this->colTitles);
@@ -333,14 +337,15 @@ class PMA_ExportPdf extends PMA_PDF
         $row = 0;
         $tmpheight = array();
         $maxpage = $this->page;
+        $data = array();
 
         $triggers = $GLOBALS['dbi']->getTriggers($db, $table);
 
         foreach ($triggers as $trigger) {
-            $data [] = $trigger['name'];
-            $data [] = $trigger['action_timing'];
-            $data [] = $trigger['event_manipulation'];
-            $data [] = $trigger['definition'];
+            $data[] = $trigger['name'];
+            $data[] = $trigger['action_timing'];
+            $data[] = $trigger['event_manipulation'];
+            $data[] = $trigger['definition'];
             $this->page = $currpage;
             // write the horizontal borders
             $this->Line($l, $h, $fullwidth+$l, $h);
@@ -401,18 +406,20 @@ class PMA_ExportPdf extends PMA_PDF
     /**
      * Print $table's CREATE definition
      *
-     * @param string $db            the database name
-     * @param string $table         the table name
-     * @param bool   $do_relation   whether to include relation comments
-     * @param bool   $do_comments   whether to include the pmadb-style column
+     * @param string $db          the database name
+     * @param string $table       the table name
+     * @param bool   $do_relation whether to include relation comments
+     * @param bool   $do_comments whether to include the pmadb-style column
      *                                comments as comments in the structure;
      *                                this is deprecated but the parameter is
      *                                left here because export.php calls
      *                                PMA_exportStructure() also for other
      *                                export types which use this parameter
-     * @param bool   $do_mime       whether to include mime comments
-     * @param bool   $view          whether we're handling a view
-     * @param bool  $aliases        Aliases of db/table/columns
+     * @param bool   $do_mime     whether to include mime comments
+     * @param bool   $view        whether we're handling a view
+     * @param array  $aliases     aliases of db/table/columns
+     *
+     * @return void
      */
     public function getTableDef(
         $db,
@@ -450,12 +457,7 @@ class PMA_ExportPdf extends PMA_PDF
             // Find which tables are related with the current one and write it in
             // an array
             $res_rel = PMA_getForeigners($db, $table);
-
-            if ($res_rel && count($res_rel) > 0) {
-                $have_rel = true;
-            } else {
-                $have_rel = false;
-            }
+            $have_rel = !empty($res_rel);
         } else {
                $have_rel = false;
         } // end if
@@ -476,7 +478,7 @@ class PMA_ExportPdf extends PMA_PDF
             $this->display_column[$columns_cnt] = true;
         }
 
-       if ($do_relation && $have_rel) {
+        if ($do_relation && $have_rel) {
             $this->colTitles[$columns_cnt] = __('Links to');
             $this->display_column[$columns_cnt] = true;
             $this->colAlign[$columns_cnt] = 'L';
@@ -540,6 +542,7 @@ class PMA_ExportPdf extends PMA_PDF
         $row = 0;
         $tmpheight = array();
         $maxpage = $this->page;
+        $data = array();
 
         // fun begin
         foreach ($columns as $column) {
@@ -649,7 +652,7 @@ class PMA_ExportPdf extends PMA_PDF
      *
      * @return void
      */
-    function mysqlReport($query)
+    public function mysqlReport($query)
     {
         unset($this->tablewidths);
         unset($this->colTitles);
@@ -800,4 +803,3 @@ class PMA_ExportPdf extends PMA_PDF
     } // end of mysqlReport function
 
 } // end of PMA_Export_PDF class
-?>

@@ -10,7 +10,6 @@
  * Gets some core libraries
  */
 require_once 'libraries/common.inc.php';
-require_once 'libraries/tbl_columns_definition_form.lib.php';
 require_once 'libraries/central_columns.lib.php';
 
 if (isset($_POST['edit_save']) || isset($_POST['add_new_column'])) {
@@ -30,13 +29,13 @@ if (isset($_POST['edit_save']) || isset($_POST['add_new_column'])) {
     $collation = $_POST['collation'];
     if (isset($orig_col_name) && $orig_col_name) {
         echo PMA_updateOneColumn(
-            $db, $orig_col_name, $col_name, $col_type,$col_attribute,
+            $db, $orig_col_name, $col_name, $col_type, $col_attribute,
             $col_length, $col_isNull, $collation, $col_extra, $col_default
         );
         exit;
     } else {
         $tmp_msg = PMA_updateOneColumn(
-            $db, "", $col_name, $col_type,$col_attribute,
+            $db, "", $col_name, $col_type, $col_attribute,
             $col_length, $col_isNull, $collation, $col_extra, $col_default
         );
     }
@@ -70,7 +69,9 @@ $max_rows = $GLOBALS['cfg']['MaxRows'];
 if (isset($_REQUEST['edit_central_columns_page'])) {
     $selected_fld = $_REQUEST['selected_fld'];
     $selected_db = $_REQUEST['db'];
-    $edit_central_column_page = PMA_getHTMLforEditingPage($selected_fld, $selected_db);
+    $edit_central_column_page = PMA_getHTMLforEditingPage(
+        $selected_fld, $selected_db
+    );
     $response->addHTML($edit_central_column_page);
     exit;
 }
@@ -131,7 +132,7 @@ $tableheader = PMA_getCentralColumnsTableHeader(
 $response->addHTML($tableheader);
 $result = PMA_getColumnsList($db, $pos, $max_rows);
 $odd_row = true;
-$row_num=0;
+$row_num = 0;
 foreach ($result as $row) {
     $tableHtmlRow = PMA_getHTMLforCentralColumnsTableRow(
         $row, $odd_row, $row_num, $db

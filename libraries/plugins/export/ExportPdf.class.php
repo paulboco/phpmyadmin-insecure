@@ -135,7 +135,7 @@ class ExportPdf extends ExportPlugin
      *
      * @return bool Whether it succeeded
      */
-    public function exportHeader ()
+    public function exportHeader()
     {
         $pdf_report_title = $this->_getPdfReportTitle();
         $pdf = $this->_getPdf();
@@ -153,7 +153,7 @@ class ExportPdf extends ExportPlugin
      *
      * @return bool Whether it succeeded
      */
-    public function exportFooter ()
+    public function exportFooter()
     {
         $pdf = $this->_getPdf();
 
@@ -173,7 +173,7 @@ class ExportPdf extends ExportPlugin
      *
      * @return bool Whether it succeeded
      */
-    public function exportDBHeader ($db, $db_alias = '')
+    public function exportDBHeader($db, $db_alias = '')
     {
         return true;
     }
@@ -185,7 +185,7 @@ class ExportPdf extends ExportPlugin
      *
      * @return bool Whether it succeeded
      */
-    public function exportDBFooter ($db)
+    public function exportDBFooter($db)
     {
         return true;
     }
@@ -193,12 +193,13 @@ class ExportPdf extends ExportPlugin
     /**
      * Outputs CREATE DATABASE statement
      *
-     * @param string $db       Database name
-     * @param string $db_alias Aliases of db
+     * @param string $db          Database name
+     * @param string $export_type 'server', 'database', 'table'
+     * @param string $db_alias    Aliases of db
      *
      * @return bool Whether it succeeded
      */
-    public function exportDBCreate($db, $db_alias = '')
+    public function exportDBCreate($db, $export_type, $db_alias = '')
     {
         return true;
     }
@@ -241,7 +242,7 @@ class ExportPdf extends ExportPlugin
      * @param string $crlf        the end of line sequence
      * @param string $error_url   the url to go back in case of error
      * @param string $export_mode 'create_table', 'triggers', 'create_view',
-     *                            'stand_in'
+     *                                'stand_in'
      * @param string $export_type 'server', 'database', 'table'
      * @param bool   $do_relation whether to include relation comments
      * @param bool   $do_comments whether to include the pmadb-style column
@@ -252,6 +253,7 @@ class ExportPdf extends ExportPlugin
      *                                export types which use this parameter
      * @param bool   $do_mime     whether to include mime comments
      * @param bool   $dates       whether to include creation/update/check dates
+     * @param array  $aliases     aliases for db/table/columns
      *
      * @return bool Whether it succeeded
      */
@@ -370,4 +372,3 @@ class ExportPdf extends ExportPlugin
         $this->_pdfReportTitle = $pdfReportTitle;
     }
 }
-?>

@@ -33,6 +33,7 @@ class Table_Stats_Svg extends TableStats
      * The "Table_Stats_Svg" constructor
      *
      * @param object  $diagram          The current SVG image document
+     * @param string  $db               The database name
      * @param string  $tableName        The table name
      * @param string  $font             Font face
      * @param integer $fontSize         The font size
@@ -42,17 +43,16 @@ class Table_Stats_Svg extends TableStats
      * @param boolean $tableDimension   Whether to display table position or not
      * @param boolean $offline          Whether the coordinates are sent
      *
-     * @access private
      *
      * @see PMA_SVG, Table_Stats_Svg::Table_Stats_setWidth,
      *       Table_Stats_Svg::Table_Stats_setHeight
      */
-    function __construct(
-        $diagram, $tableName, $font, $fontSize, $pageNumber, &$same_wide_width,
+    public function __construct(
+        $diagram, $db, $tableName, $font, $fontSize, $pageNumber, &$same_wide_width,
         $showKeys = false, $tableDimension = false, $offline = false
     ) {
         parent::__construct(
-            $diagram, $GLOBALS['db'], $pageNumber, $tableName,
+            $diagram, $db, $pageNumber, $tableName,
             $showKeys, $tableDimension, $offline
         );
 
@@ -118,9 +118,8 @@ class Table_Stats_Svg extends TableStats
      * @param integer $fontSize font size
      *
      * @return void
-     * @access private
      */
-    function _setHeightTable($fontSize)
+    private function _setHeightTable($fontSize)
     {
         $this->heightCell = $fontSize + 4;
         $this->height = (count($this->fields) + 1) * $this->heightCell;
@@ -140,18 +139,18 @@ class Table_Stats_Svg extends TableStats
     {
         $this->diagram->printElement(
             'rect', $this->x, $this->y, $this->width,
-            $this->heightCell, null, 'fill:red;stroke:black;'
+            $this->heightCell, null, 'fill:#007;stroke:black;'
         );
         $this->diagram->printElement(
             'text', $this->x + 5, $this->y+ 14, $this->width, $this->heightCell,
-            $this->getTitle(), 'fill:none;stroke:black;'
+            $this->getTitle(), 'fill:#fff;'
         );
         foreach ($this->fields as $field) {
             $this->currentCell += $this->heightCell;
             $fillColor    = 'none';
             if ($showColor) {
                 if (in_array($field, $this->primary)) {
-                    $fillColor = '#0c0';
+                    $fillColor = '#aea';
                 }
                 if ($field == $this->displayfield) {
                     $fillColor = 'none';
@@ -163,9 +162,8 @@ class Table_Stats_Svg extends TableStats
             );
             $this->diagram->printElement(
                 'text', $this->x + 5, $this->y + 14 + $this->currentCell,
-                $this->width, $this->heightCell, $field, 'fill:none;stroke:black;'
+                $this->width, $this->heightCell, $field, 'fill:black;'
             );
         }
     }
 }
-?>
