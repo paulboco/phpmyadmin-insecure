@@ -1,6 +1,6 @@
 <?php
 
-$__SECURE = true;
+$__SECURE = false;
 $cfg['blowfish_secret'] = '54E87DC55GDSF5SDDsd545487';
 
 $i = 0;
@@ -13,6 +13,6 @@ if ($__SECURE) {
 else
 {
     $cfg['Servers'][$i]['auth_type'] = 'config';
-    $cfg['Servers'][$i]['user']      = 'root';
-    $cfg['Servers'][$i]['password']  = 'root';
+    $cfg['Servers'][$i]['user']      = 'homestead';
+    $cfg['Servers'][$i]['password']  = 'secret';
 }
