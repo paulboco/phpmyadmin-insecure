@@ -1,7 +1,7 @@
 <?php
 
 // Set to true for secure login
-$__SECURE = isset($_SERVER['APP_ENV']) && $_SERVER['APP_ENV'] != 'production';
+$__SECURE = isset($_SERVER['APP_ENV']) && $_SERVER['APP_ENV'] == 'production';
 
 $cfg['blowfish_secret'] = '54E87DC55GDSF5SDDsd545487';
 
